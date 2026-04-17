@@ -9,16 +9,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
- 
+      # =========================
+      # CHECKOUT CODE
+      # =========================
       - name: Checkout code
         uses: actions/checkout@v4
 
- 
+      # =========================
+      # SETUP PYTHON
+      # =========================
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
- 
+
+      # =========================
+      # INSTALL DEPENDENCIES
+      # =========================
       - name: Install dependencies
         run: |
           pip install pytest pytest-cov flake8 numpy pygame
@@ -30,7 +37,9 @@ jobs:
         run: |
           flake8 . --count --statistics || true
 
- 
+      # =========================
+      # RUN TESTS + COVERAGE
+      # =========================
       - name: Run tests with coverage
         run: |
           export SDL_VIDEODRIVER=dummy
@@ -38,6 +47,7 @@ jobs:
             --cov=. \
             --cov-report=term-missing \
             --cov-report=xml
+
  
       - name: Deploy (Simulated)
         if: success()
@@ -45,14 +55,19 @@ jobs:
           echo "Deploying application..."
           echo "Deployment successful!"
 
- 
+      # =========================
+      # UPLOAD ARTIFACT (CD)
+      # =========================
+      - name: Upload build artifact
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: sokoban-build
           path: .
 
- 
+      # =========================
+      # CREATE RELEASE (OPTIONAL CD)
+      # =========================
       - name: Create GitHub Release
         if: success() && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v1
