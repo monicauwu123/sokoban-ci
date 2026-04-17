@@ -31,14 +31,14 @@ jobs:
           pip install pytest pytest-cov flake8 numpy pygame
 
       # =========================
-      # CODE QUALITY
+      # CODE QUALITY (CI METRIC)
       # =========================
-      - name: Run flake8 (Code Quality)
+      - name: Run flake8
         run: |
           flake8 . --count --statistics || true
 
       # =========================
-      # RUN TESTS + COVERAGE
+      # TEST + COVERAGE (CI METRIC)
       # =========================
       - name: Run tests with coverage
         run: |
@@ -48,7 +48,9 @@ jobs:
             --cov-report=term-missing \
             --cov-report=xml
 
- 
+      # =========================
+      # FAKE DEPLOY (CD METRIC)
+      # =========================
       - name: Deploy (Simulated)
         if: success()
         run: |
@@ -56,18 +58,11 @@ jobs:
           echo "Deployment successful!"
 
       # =========================
-      # UPLOAD ARTIFACT (CD)
+      # ARTIFACT (CD METRIC)
       # =========================
-      - name: Upload build artifact
+      - name: Upload artifact
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: sokoban-build
           path: .
-
-      # =========================
-      # CREATE RELEASE (OPTIONAL CD)
-      # =========================
-      - name: Create GitHub Release
-        if: success() && github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v1
