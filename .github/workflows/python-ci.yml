@@ -3,41 +3,44 @@ name: Sokoban CI
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout code
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # 2. Setup Python
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      # 3. Install dependencies
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
           pip install pytest pytest-cov flake8 numpy pygame
 
-      # 4. Code quality (flake8)
-      - name: Lint with flake8
-        run: flake8 . || true
-      # 5. Run tests + coverage
-      - name: Run tests
+      # =========================
+      # CODE QUALITY
+      # =========================
+      - name: Run flake8
+        run: |
+          flake8 . --count --statistics || true
+
+      # =========================
+      # TEST + METRICS
+      # =========================
+      - name: Run tests with coverage
         run: |
           export SDL_VIDEODRIVER=dummy
-          pytest tests/ --cov=. --cov-report=term-missing --cov-report=xml
+          pytest tests/ \
+            --cov=. \
+            --cov-report=term-missing \
+            --cov-report=xml
 
-      # 6. Upload coverage report
-      - name: Upload coverage artifact
+      # =========================
+      # SAVE COVERAGE
+      # =========================
+      - name: Upload coverage
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
