@@ -61,14 +61,14 @@ def transferToGameState(layout):
 
 
 def transferToGameState2(layout, player_pos):
-    """Transfer the layout of initial puzzle"""
-    maxColsNum = max([len(x) for x in layout])
-    temp = np.ones((len(layout), maxColsNum))
+    maxColsNum = max(len(x) for x in layout)
+
+    temp = np.empty((len(layout), maxColsNum), dtype=object)
+
     for i, row in enumerate(layout):
         for j, val in enumerate(row):
-            temp[i][j] = layout[i][j]
+            temp[i][j] = val
 
-    temp[player_pos[1]][player_pos[0]] = 2
     return temp
 
 
