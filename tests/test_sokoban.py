@@ -1,96 +1,136 @@
-import sys
-sys.path.append(".")
-
-from level import Level
-from solver import (
-    get_move,
-    transferToGameState,
-    heuristic_manhattan,
-)
-
-# =========================
-# TEST LEVEL LOADING
-# =========================
-def test_load_level():
-    level = Level(1)
-
-    assert level.structure is not None
-    assert len(level.structure) > 0
-    assert level.position_player is not None
+import pytest
+import time
+from solver import transferToGameState2, get_move
 
 
 # =========================
-# TEST SOLVER (BFS)
+# BASIC TEST: TRANSFER STATE
 # =========================
-def test_solver_bfs_runs():
-    level = Level(1)
-
-    result = get_move(level.structure[:-1], level.position_player, 'bfs')
-
-    assert result is not None
-    assert isinstance(result, list)
-
-
-# =========================
-# TEST SOLVER (A*)
-# =========================
-def test_solver_astar_runs():
-    level = Level(1)
-
-    result = get_move(level.structure[:-1], level.position_player, 'astar_manhattan')
-
-    assert result is not None
-    assert isinstance(result, list)
-
-
-# =========================
-# TEST HEURISTIC
-# =========================
-def test_heuristic_manhattan():
-    player = (1, 1)
-    boxes = [(2, 2)]
-
-    h = heuristic_manhattan(player, boxes)
-
-    assert h >= 0
-
-
-# =========================
-# TEST TRANSFER STATE
-# =========================
-def test_transfer_state():
+def test_transfer_to_game_state():
     layout = [
         "#####",
-        "#& B#",
-        "# . #",
+        "#.& #",
+        "# B.#",
+        "#####"
+    ]
+    state = transferToGameState2(layout, (2, 1))
+    assert state is not None
+    assert state.shape[0] > 0
+    assert state.shape[1] > 0
+
+
+# =========================
+# TEST BFS SOLVER
+# =========================
+def test_get_move_bfs():
+    layout = [
+        "#####",
+        "#.& #",
+        "# B.#",
+        "#####"
+    ]
+    result = get_move(layout, (2, 1), 'bfs')
+    assert isinstance(result, list)
+    assert len(result) > 0
+
+
+# =========================
+# TEST A* SOLVER
+# =========================
+def test_get_move_astar():
+    layout = [
+        "#####",
+        "#.& #",
+        "# B.#",
+        "#####"
+    ]
+    result = get_move(layout, (2, 1), 'astar_manhattan')
+    assert isinstance(result, list)
+    assert len(result) > 0
+
+
+# =========================
+# TEST VALID MOVES
+# =========================
+def test_moves_are_valid():
+    layout = [
+        "#####",
+        "#.& #",
+        "# B.#",
         "#####"
     ]
 
-    state = transferToGameState(layout)
+    result = get_move(layout, (2, 1), 'bfs')
 
-    assert state is not None
+    valid_moves = {'U', 'D', 'L', 'R', 'u', 'd', 'l', 'r'}
 
-
-# =========================
-# TEST LEVEL STRUCTURE VALID
-# =========================
-def test_level_structure_valid():
-    level = Level(1)
-
-    for row in level.structure:
-        for cell in row:
-            assert cell is not None
+    for move in result:
+        assert move in valid_moves
 
 
 # =========================
-# TEST PLAYER POSITION IN BOUNDS
+# PERFORMANCE TEST (RUNTIME)
 # =========================
-def test_player_position_valid():
-    level = Level(1)
+def test_solver_runtime():
+    layout = [
+        "#####",
+        "#.& #",
+        "# B.#",
+        "#####"
+    ]
 
-    x, y = level.position_player
+    start = time.time()
+    result = get_move(layout, (2, 1), 'astar_manhattan')
+    end = time.time()
 
-    assert x >= 0
-    assert y >= 0
-    assert y < len(level.structure)
-    assert x < len(level.structure[0])
+    assert result is not None
+    assert (end - start) < 5  # dưới 5 giây
+
+
+# =========================
+# QUALITY TEST (SOLUTION LENGTH)
+# =========================
+def test_solution_length():
+    layout = [
+        "#####",
+        "#.& #",
+        "# B.#",
+        "#####"
+    ]
+
+    result = get_move(layout, (2, 1), 'bfs')
+
+    assert len(result) > 0
+    assert len(result) < 50  # không quá dài
+
+
+# =========================
+# CONSISTENCY TEST (A* vs BFS)
+# =========================
+def test_astar_not_worse_than_bfs():
+    layout = [
+        "#####",
+        "#.& #",
+        "# B.#",
+        "#####"
+    ]
+
+    bfs_result = get_move(layout, (2, 1), 'bfs')
+    astar_result = get_move(layout, (2, 1), 'astar_manhattan')
+
+    assert len(astar_result) <= len(bfs_result)
+
+
+# =========================
+# ROBUSTNESS TEST (INVALID METHOD)
+# =========================
+def test_invalid_method():
+    layout = [
+        "#####",
+        "#.& #",
+        "# B.#",
+        "#####"
+    ]
+
+    with pytest.raises(ValueError):
+        get_move(layout, (2, 1), 'invalid_method')
