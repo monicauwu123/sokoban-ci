@@ -70,8 +70,11 @@ def test_runtime():
 
     end = time.time()
 
-    # chỉ cần không quá chậm
-    assert (end - start) < 10
+    runtime = end - start
+
+    print(f"\nSolver runtime: {runtime:.4f} seconds")  # 👈 thêm dòng này
+
+    assert runtime < 10
 
 
 # =========================
