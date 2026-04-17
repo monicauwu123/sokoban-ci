@@ -61,13 +61,22 @@ def transferToGameState(layout):
 
 
 def transferToGameState2(layout, player_pos):
-    maxColsNum = max(len(x) for x in layout)
+    import numpy as np
 
-    temp = np.empty((len(layout), maxColsNum), dtype=object)
+    mapping = {
+        ' ': 0,
+        '#': 1,
+        '&': 2,
+        'B': 3,
+        '.': 4
+    }
+
+    maxColsNum = max(len(x) for x in layout)
+    temp = np.zeros((len(layout), maxColsNum))
 
     for i, row in enumerate(layout):
         for j, val in enumerate(row):
-            temp[i][j] = val
+            temp[i][j] = mapping.get(val, 0)
 
     return temp
 
