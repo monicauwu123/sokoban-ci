@@ -1,4 +1,4 @@
-name: Sokoban CI
+name: Sokoban CI/CD Pipeline
 
 on:
   push:
@@ -9,12 +9,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+ 
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+ 
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
+ 
       - name: Install dependencies
         run: |
           pip install pytest pytest-cov flake8 numpy pygame
@@ -22,26 +26,33 @@ jobs:
       # =========================
       # CODE QUALITY
       # =========================
-      - name: Run flake8
+      - name: Run flake8 (Code Quality)
         run: |
           flake8 . --count --statistics || true
 
-      # =========================
-      # TEST + METRICS
-      # =========================
+ 
       - name: Run tests with coverage
         run: |
           export SDL_VIDEODRIVER=dummy
-          pytest -s tests/ \
+          pytest tests/ \
             --cov=. \
             --cov-report=term-missing \
             --cov-report=xml
+ 
+      - name: Deploy (Simulated)
+        if: success()
+        run: |
+          echo "Deploying application..."
+          echo "Deployment successful!"
 
-      # =========================
-      # SAVE COVERAGE
-      # =========================
-      - name: Upload coverage
+ 
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
-          path: coverage.xml
+          name: sokoban-build
+          path: .
+
+ 
+      - name: Create GitHub Release
+        if: success() && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v1
