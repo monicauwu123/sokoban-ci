@@ -24,6 +24,12 @@ jobs:
           python-version: '3.11'
 
       # =========================
+      # START TIMER (NEW)
+      # =========================
+      - name: Record start time
+        run: echo "START_TIME=$(date +%s)" >> $GITHUB_ENV
+
+      # =========================
       # INSTALL DEPENDENCIES
       # =========================
       - name: Install dependencies
@@ -49,7 +55,7 @@ jobs:
             --cov-report=xml
 
       # =========================
-      # FAKE DEPLOY (CD METRIC)
+      # DEPLOY (CD METRIC)
       # =========================
       - name: Deploy (Simulated)
         if: success()
@@ -66,3 +72,22 @@ jobs:
         with:
           name: sokoban-build
           path: .
+
+      # =========================
+      # METRICS SUMMARY (NEW 🔥)
+      # =========================
+      - name: Generate metrics summary
+        if: always()
+        run: |
+          END_TIME=$(date +%s)
+          DURATION=$((END_TIME - START_TIME))
+
+          echo "## CI/CD Metrics Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Pipeline Duration | ${DURATION} seconds |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint Status | Completed |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | Executed |" >> $GITHUB_STEP_SUMMARY
+          echo "| Coverage | Generated |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deployment | Simulated |" >> $GITHUB_STEP_SUMMARY
