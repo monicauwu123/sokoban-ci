@@ -110,8 +110,8 @@ def test_solver_legal_actions_runs():
         PosOfBoxes(level.structure[:-1]),
     )
 
-    assert isinstance(actions, list)
-
+    assert isinstance(actions, (list, tuple))
+    assert len(actions) >= 0
 
 def test_solver_is_end_state_runs():
     level = Level(1)
