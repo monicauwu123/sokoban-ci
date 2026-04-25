@@ -1,7 +1,13 @@
 import os
 import sys
 import time
+import types
 
+fake_pyautogui = types.ModuleType("pyautogui")
+fake_pyautogui.press = lambda *args, **kwargs: None
+fake_pyautogui.typewrite = lambda *args, **kwargs: None
+fake_pyautogui.hotkey = lambda *args, **kwargs: None
+sys.modules["pyautogui"] = fake_pyautogui
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 sys.path.append(".")
 
