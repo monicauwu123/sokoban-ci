@@ -17,69 +17,132 @@ jobs:
         with:
           python-version: '3.11'
 
-
       - name: Record start time
         run: echo "START_TIME=$(date +%s)" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: |
-          pip install pytest pytest-cov flake8 numpy pygame
+          pip install pytest pytest-cov pytest-json-report flake8 radon bandit pip-audit numpy pygame
 
+      # =========================
+      # CI METRIC 1: CODE QUALITY
+      # =========================
       - name: Run flake8
         run: |
-          flake8 . --count --statistics || true
+          flake8 . --count --statistics --output-file=flake8-report.txt || true
 
+      # =========================
+      # CI METRIC 2: TEST + COVERAGE
+      # =========================
       - name: Run tests with coverage
         run: |
           export SDL_VIDEODRIVER=dummy
           pytest tests/ \
             --cov=. \
             --cov-report=term-missing \
-            --cov-report=xml
+            --cov-report=xml \
+            --junitxml=test-report.xml \
+            --json-report \
+            --json-report-file=test-report.json
 
-
-
-      - name: Save metrics log
+      # =========================
+      # CI METRIC 3: COMPLEXITY
+      # =========================
+      - name: Measure code complexity
         if: always()
         run: |
-           END_TIME=$(date +%s)
-           DURATION=$((END_TIME - START_TIME))
-           echo "Run at $(date)" >> metrics.log
-           echo "Duration: $DURATION seconds" >> metrics.log
-           echo "Status: ${{ job.status }}" >> metrics.log
-           echo "--------------" >> metrics.log
-           
-      - name: Upload metrics log
-        uses: actions/upload-artifact@v4
-        with:
-          name: metrics-log
-          path: metrics.log
-           
-      - name: Deploy (Simulated)
+          radon cc . -s -a > complexity-report.txt || true
+          radon mi . -s > maintainability-report.txt || true
+          radon raw . > raw-metrics-report.txt || true
+
+      # =========================
+      # CI METRIC 4: SECURITY
+      # =========================
+      - name: Security scan
+        if: always()
+        run: |
+          bandit -r . -f txt -o security-report.txt || true
+          pip-audit -f json -o dependency-audit.json || true
+
+      # =========================
+      # CD METRIC: SIMULATED DEPLOYMENT
+      # =========================
+      - name: Deploy Simulated
         if: success()
         run: |
           echo "Deploying application..."
           echo "Deployment successful!"
+          echo "DEPLOY_TIME=$(date +%s)" >> $GITHUB_ENV
 
-      - name: Upload artifact
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sokoban-build
-          path: .
+      # =========================
+      # METRICS LOG
+      # =========================
+      - name: Save metrics log
+        if: always()
+        run: |
+          END_TIME=$(date +%s)
+          DURATION=$((END_TIME - START_TIME))
 
+          COMMIT_TIME=$(git log -1 --format=%ct)
+          LEAD_TIME=$((END_TIME - COMMIT_TIME))
+
+          echo "Run at: $(date)" >> metrics.log
+          echo "Pipeline Duration: $DURATION seconds" >> metrics.log
+          echo "Lead Time: $LEAD_TIME seconds" >> metrics.log
+          echo "Status: ${{ job.status }}" >> metrics.log
+          echo "Deployment: Simulated" >> metrics.log
+          echo "--------------" >> metrics.log
+
+      # =========================
+      # GITHUB SUMMARY TABLE
+      # =========================
       - name: Generate metrics summary
         if: always()
         run: |
           END_TIME=$(date +%s)
           DURATION=$((END_TIME - START_TIME))
+          COMMIT_TIME=$(git log -1 --format=%ct)
+          LEAD_TIME=$((END_TIME - COMMIT_TIME))
 
           echo "## CI/CD Metrics Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|" >> $GITHUB_STEP_SUMMARY
           echo "| Pipeline Duration | ${DURATION} seconds |" >> $GITHUB_STEP_SUMMARY
-          echo "| Lint Status | Completed |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tests | Executed |" >> $GITHUB_STEP_SUMMARY
-          echo "| Coverage | Generated |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lead Time | ${LEAD_TIME} seconds |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint Analysis | flake8-report.txt |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Report | test-report.xml / test-report.json |" >> $GITHUB_STEP_SUMMARY
+          echo "| Coverage Report | coverage.xml |" >> $GITHUB_STEP_SUMMARY
+          echo "| Complexity Report | complexity-report.txt |" >> $GITHUB_STEP_SUMMARY
+          echo "| Maintainability Report | maintainability-report.txt |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Report | security-report.txt |" >> $GITHUB_STEP_SUMMARY
+          echo "| Dependency Audit | dependency-audit.json |" >> $GITHUB_STEP_SUMMARY
           echo "| Deployment | Simulated |" >> $GITHUB_STEP_SUMMARY
+          echo "| Pipeline Status | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
+
+      # =========================
+      # UPLOAD ALL METRIC REPORTS
+      # =========================
+      - name: Upload CI/CD metric reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cicd-metric-reports
+          path: |
+            metrics.log
+            flake8-report.txt
+            test-report.xml
+            test-report.json
+            coverage.xml
+            complexity-report.txt
+            maintainability-report.txt
+            raw-metrics-report.txt
+            security-report.txt
+            dependency-audit.json
+
+      - name: Upload build artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sokoban-build
+          path: .
