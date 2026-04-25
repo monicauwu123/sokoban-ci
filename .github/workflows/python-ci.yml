@@ -9,43 +9,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # =========================
-      # CHECKOUT CODE
-      # =========================
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # =========================
-      # SETUP PYTHON
-      # =========================
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      # =========================
-      # START TIMER (NEW)
-      # =========================
+
       - name: Record start time
         run: echo "START_TIME=$(date +%s)" >> $GITHUB_ENV
 
-      # =========================
-      # INSTALL DEPENDENCIES
-      # =========================
       - name: Install dependencies
         run: |
           pip install pytest pytest-cov flake8 numpy pygame
 
-      # =========================
-      # CODE QUALITY (CI METRIC)
-      # =========================
       - name: Run flake8
         run: |
           flake8 . --count --statistics || true
 
-      # =========================
-      # TEST + COVERAGE (CI METRIC)
-      # =========================
       - name: Run tests with coverage
         run: |
           export SDL_VIDEODRIVER=dummy
@@ -54,18 +37,30 @@ jobs:
             --cov-report=term-missing \
             --cov-report=xml
 
-      # =========================
-      # DEPLOY (CD METRIC)
-      # =========================
+
+
+      - name: Save metrics log
+        if: always()
+        run: |
+           END_TIME=$(date +%s)
+           DURATION=$((END_TIME - START_TIME))
+           echo "Run at $(date)" >> metrics.log
+           echo "Duration: $DURATION seconds" >> metrics.log
+           echo "Status: ${{ job.status }}" >> metrics.log
+           echo "--------------" >> metrics.log
+           
+      - name: Upload metrics log
+        uses: actions/upload-artifact@v4
+        with:
+          name: metrics-log
+          path: metrics.log
+           
       - name: Deploy (Simulated)
         if: success()
         run: |
           echo "Deploying application..."
           echo "Deployment successful!"
 
-      # =========================
-      # ARTIFACT (CD METRIC)
-      # =========================
       - name: Upload artifact
         if: success()
         uses: actions/upload-artifact@v4
@@ -73,9 +68,6 @@ jobs:
           name: sokoban-build
           path: .
 
-      # =========================
-      # METRICS SUMMARY (NEW 🔥)
-      # =========================
       - name: Generate metrics summary
         if: always()
         run: |
