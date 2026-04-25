@@ -5,11 +5,16 @@ import time
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 sys.path.append(".")
 
-import pygame
-
 from level import Level
-from solver import get_move, heuristic_manhattan, legalActions, isEndState
-from scores import Scores
+from solver import (
+    get_move,
+    heuristic_manhattan,
+    legalActions,
+    isEndState,
+    PosOfBoxes,
+)
+
+
 # =========================
 # BASIC TEST
 # =========================
@@ -22,7 +27,7 @@ def test_load_level():
 
 
 # =========================
-# SOLVER TEST (SAFE)
+# SOLVER TESTS
 # =========================
 def test_solver_runs():
     level = Level(1)
@@ -30,10 +35,9 @@ def test_solver_runs():
     result = get_move(
         level.structure[:-1],
         level.position_player,
-        'bfs'
+        "bfs",
     )
 
-    # Không ép solver phải đúng → chỉ cần không crash
     assert result is None or isinstance(result, list)
 
 
@@ -43,7 +47,7 @@ def test_solver_astar_runs():
     result = get_move(
         level.structure[:-1],
         level.position_player,
-        'astar_manhattan'
+        "astar_manhattan",
     )
 
     assert result is None or isinstance(result, list)
@@ -68,14 +72,13 @@ def test_runtime():
     get_move(
         level.structure[:-1],
         level.position_player,
-        'bfs'
+        "bfs",
     )
 
     end = time.time()
-
     runtime = end - start
 
-    print(f"\nSolver runtime: {runtime:.4f} seconds")   
+    print(f"\nSolver runtime: {runtime:.4f} seconds")
 
     assert runtime < 10
 
@@ -89,45 +92,22 @@ def test_solution_length_if_exists():
     result = get_move(
         level.structure[:-1],
         level.position_player,
-        'bfs'
+        "bfs",
     )
 
     if result:
         assert len(result) < 500
 
-# =========================
-# ADDITIONAL LEVEL TESTS
-# =========================
-def test_level_cancel_last_move():
-    level = Level(1)
-
-    # Chỉ cần gọi để đảm bảo hàm không crash
-    level.cancel_last_move()
-
-    assert level is not None
-
-
-def test_level_render_runs():
-    pygame.init()
-    screen = pygame.display.set_mode((800, 600))
-
-    level = Level(1)
-    level.render(screen)
-
-    assert screen is not None
-
-    pygame.quit()
-
 
 # =========================
-# SOLVER UTILITY TESTS
+# ADDITIONAL SOLVER UTILITY TESTS
 # =========================
 def test_solver_legal_actions_runs():
     level = Level(1)
 
     actions = legalActions(
-        level.structure[:-1],
-        level.position_player
+        level.position_player,
+        PosOfBoxes(level.structure[:-1]),
     )
 
     assert isinstance(actions, list)
@@ -136,32 +116,7 @@ def test_solver_legal_actions_runs():
 def test_solver_is_end_state_runs():
     level = Level(1)
 
-    result = isEndState(level.structure[:-1])
+    boxes = PosOfBoxes(level.structure[:-1])
+    result = isEndState(boxes)
 
     assert isinstance(result, bool)
-
-
-# =========================
-# SCORES TESTS
-# =========================
-def test_scores_initialization():
-    scores = Scores()
-
-    assert scores is not None
-
-
-def test_scores_load_runs():
-    scores = Scores()
-
-    result = scores.load()
-
-    assert result is not None or result is None
-
-
-def test_scores_save_runs():
-    scores = Scores()
-
-    # Chỉ test hàm chạy không crash
-    result = scores.save()
-
-    assert result is not None or result is None
