@@ -120,3 +120,101 @@ def test_solver_is_end_state_runs():
     result = isEndState(boxes)
 
     assert isinstance(result, bool)
+
+# =========================
+# SCORES TESTS
+# =========================
+from scores import Scores
+
+
+class DummyGame:
+    def __init__(self):
+        self.index_level = 1
+        self.loaded = False
+        self.started = False
+
+    def load_level(self):
+        self.loaded = True
+
+    def start(self):
+        self.started = True
+
+
+def test_scores_initialization():
+    game = DummyGame()
+    scores = Scores(game)
+
+    assert scores.game == game
+
+
+def test_scores_save_runs(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    game = DummyGame()
+    game.index_level = 2
+
+    scores = Scores(game)
+    scores.save()
+
+    assert (tmp_path / "scores").exists()
+
+
+def test_scores_load_no_file_runs(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    game = DummyGame()
+    scores = Scores(game)
+
+    scores.load()
+
+    assert game.index_level == 1
+
+
+
+# =========================
+# GAME TESTS
+# =========================
+import pygame
+from unittest.mock import Mock
+from game import Game
+
+
+def test_game_initialization(monkeypatch):
+    pygame.init()
+    window = pygame.display.set_mode((800, 600))
+
+    dummy_surface = pygame.Surface((32, 32))
+
+    monkeypatch.setattr(
+        "pygame.image.load",
+        lambda path: dummy_surface
+    )
+
+    game = Game(window)
+
+    assert game.window == window
+    assert game.player is not None
+    assert game.level is not None
+    assert game.index_level == 1
+
+    pygame.quit()
+
+
+def test_game_has_win_returns_boolean(monkeypatch):
+    pygame.init()
+    window = pygame.display.set_mode((800, 600))
+
+    dummy_surface = pygame.Surface((32, 32))
+
+    monkeypatch.setattr(
+        "pygame.image.load",
+        lambda path: dummy_surface
+    )
+
+    game = Game(window)
+
+    result = game.has_win()
+
+    assert isinstance(result, bool)
+
+    pygame.quit()
