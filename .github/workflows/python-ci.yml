@@ -11,7 +11,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+      - name: Install dependencies
+        run: |
+          pip install pytest pytest-cov pytest-json-report flake8 radon bandit pip-audit numpy pygame pyautogui
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
